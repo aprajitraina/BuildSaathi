@@ -1,0 +1,38 @@
+name: AI Services CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'ai-services/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'ai-services/**'
+
+jobs:
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: ai-services/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        working-directory: ai-services
+
+      - name: Start FastAPI and health check
+        run: |
+          MOCK_AI=true uvicorn main:app --host 0.0.0.0 --port 8000 &
+          sleep 3
+          curl -f http://localhost:8000/health
+        working-directory: ai-services

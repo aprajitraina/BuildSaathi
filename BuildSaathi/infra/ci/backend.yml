@@ -1,0 +1,67 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+
+jobs:
+  build-and-test:
+    name: Build, Lint & Test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: buildsaathi_test
+          MYSQL_USER: buildsaathi
+          MYSQL_PASSWORD: buildsaathi123
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -ptestroot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore backend/BuildSaathi.sln
+        working-directory: .
+
+      - name: Build
+        run: dotnet build backend/BuildSaathi.sln -c Release --no-restore
+        working-directory: .
+
+      - name: Run tests
+        run: >
+          dotnet test backend/BuildSaathi.sln
+          -c Release --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+        working-directory: .
+        env:
+          ConnectionStrings__DefaultConnection: "Server=localhost;Port=3306;Database=buildsaathi_test;User=buildsaathi;Password=buildsaathi123;"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: '**/test-results.trx'

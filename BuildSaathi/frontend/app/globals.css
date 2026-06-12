@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* BuildSaathi brand: Dark base, Orange primary */
+    --background: 228 21% 10%;       /* #141620 dark navy */
+    --foreground: 220 20% 92%;       /* near-white */
+    --card: 228 22% 13%;             /* #1C1F2B */
+    --card-foreground: 220 20% 92%;
+    --popover: 228 22% 13%;
+    --popover-foreground: 220 20% 92%;
+    --primary: 25 95% 53%;           /* #F97316 orange */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 228 20% 16%;
+    --secondary-foreground: 220 20% 80%;
+    --muted: 228 20% 16%;
+    --muted-foreground: 220 9% 50%;
+    --accent: 228 20% 18%;
+    --accent-foreground: 220 20% 92%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 228 20% 20%;
+    --input: 228 20% 18%;
+    --ring: 25 95% 53%;
+    --radius: 0.75rem;
+
+    /* Brand tokens */
+    --brand-orange: #F97316;
+    --brand-navy: #1C1F2B;
+    --brand-dark: #141620;
+    --brand-slate: #333333;
+    --brand-offwhite: #F8F9FA;
+    --sidebar-bg: #1C1F2B;
+    --sidebar-border: rgba(255,255,255,0.07);
+  }
+
+  .dark {
+    --background: 222 24% 11%;
+    --foreground: 220 20% 96%;
+    --card: 222 22% 14%;
+    --card-foreground: 220 20% 96%;
+    --popover: 222 22% 14%;
+    --popover-foreground: 220 20% 96%;
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 20% 18%;
+    --secondary-foreground: 220 20% 96%;
+    --muted: 222 20% 18%;
+    --muted-foreground: 220 9% 58%;
+    --accent: 222 20% 18%;
+    --accent-foreground: 220 20% 96%;
+    --destructive: 0 62% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 20% 22%;
+    --input: 222 20% 22%;
+    --ring: 25 95% 53%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+
+  html {
+    scroll-behavior: smooth;
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #__next,
+  [data-nextjs-scroll-focus-boundary] {
+    height: 100%;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* ── Scrollbar ─────────────────────────────────────────── */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 2px;
+  }
+
+  /* ── Skeleton ──────────────────────────────────────────── */
+  .skeleton { @apply animate-pulse rounded-md bg-muted; }
+
+  /* ── Text gradients ────────────────────────────────────── */
+  .text-gradient-orange {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #F97316, #fb923c);
+  }
+
+  /* ── Dot-grid background (hero) ────────────────────────── */
+  .hero-grid-bg {
+    background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .dark .hero-grid-bg {
+    background-image: radial-gradient(circle, #2d3748 1px, transparent 1px);
+  }
+  /* Blueprint grid for auth/login */
+  .blueprint-grid {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ── Glow effects ──────────────────────────────────────── */
+  .glow-orange {
+    box-shadow: 0 0 40px -8px rgba(249,115,22,0.4);
+  }
+  .glow-orange-sm {
+    box-shadow: 0 0 18px -4px rgba(249,115,22,0.35);
+  }
+
+  /* ── Glass card ────────────────────────────────────────── */
+  .glass-card {
+    @apply border border-white/10 bg-white/5 backdrop-blur-sm;
+  }
+
+  /* ── Sidebar nav active state ──────────────────────────── */
+  .sidebar-active {
+    background: rgba(249,115,22,0.12);
+    color: #F97316;
+  }
+  .sidebar-active-bar {
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: #F97316;
+  }
+
+  /* ── Premium card hover ────────────────────────────────── */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
+  }
+
+  /* ── Section separator ─────────────────────────────────── */
+  .section-fade-top {
+    mask-image: linear-gradient(to bottom, transparent, black 10%);
+  }
+
+  /* ── Noise overlay ─────────────────────────────────────── */
+  .noise-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.5;
+    border-radius: inherit;
+  }
+
+  /* ── Gradient border ───────────────────────────────────── */
+  .gradient-border {
+    position: relative;
+  }
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(249,115,22,0.3), rgba(249,115,22,0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* ── Dashboard stat card accent ───────────────────────── */
+  .stat-accent {
+    @apply relative overflow-hidden;
+  }
+  .stat-accent::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #F97316, rgba(249,115,22,0.2));
+    border-radius: 1px 1px 0 0;
+  }
+}

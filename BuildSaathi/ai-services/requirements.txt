@@ -1,0 +1,21 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.7.0
+httpx==0.28.1
+python-dotenv==1.0.1
+
+# OpenAI (Phase 3 — install when ready to use)
+openai==1.58.1
+
+# LangChain (Phase 3)
+langchain==0.3.13
+langchain-openai==0.2.14
+langchain-community==0.3.13
+
+# Vector store (Phase 3)
+chromadb==0.6.0
+
+# Utilities
+python-multipart==0.0.20
+aiofiles==24.1.0

@@ -1,0 +1,171 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# BuildSaathi — Local Development Docker Compose
+# Run: docker-compose up -d
+# Services: MySQL, Redis, MinIO, ChromaDB, API, Frontend, AI Services
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── MySQL 8 ───────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: buildsaathi-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-buildsaathi_dev}
+      MYSQL_USER: ${MYSQL_USER:-buildsaathi}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-buildsaathi123}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./infra/docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: buildsaathi-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ── MinIO (S3-compatible file storage) ────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: buildsaathi-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── ChromaDB (Vector store for RAG) ───────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: buildsaathi-chromadb
+    restart: unless-stopped
+    ports:
+      - "${CHROMA_PORT:-8001}:8000"
+    volumes:
+      - chroma-data:/chroma/.chroma/index
+
+  # ── ASP.NET Core API ──────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: ../infra/docker/api/Dockerfile
+    container_name: buildsaathi-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-buildsaathi_dev};User=${MYSQL_USER:-buildsaathi};Password=${MYSQL_PASSWORD:-buildsaathi123};
+      - DatabaseSettings__ServerVersion=${DB_SERVER_VERSION:-8.0.36}
+      - JwtSettings__Secret=${JWT_SECRET:-your_jwt_secret_at_least_32_characters}
+      - JwtSettings__Issuer=${JWT_ISSUER:-BuildSaathi}
+      - JwtSettings__Audience=${JWT_AUDIENCE:-BuildSaathi-Client}
+      - AIServiceSettings__BaseUrl=http://ai-services:8000
+      - AIServiceSettings__MockEnabled=${AI_MOCK_MODE:-true}
+      - AIServiceSettings__TimeoutSeconds=${AI_TIMEOUT_SECONDS:-30}
+      - AIServiceSettings__RetryCount=${AI_RETRY_COUNT:-2}
+      - AIServiceSettings__RetryDelayMs=${AI_RETRY_DELAY_MS:-500}
+      - RedisSettings__ConnectionString=redis:6379
+      - Cors__Origins=${CORS_ORIGINS:-http://localhost:3000}
+      - Swagger__Enable=${SWAGGER_ENABLE:-false}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET_DOCUMENTS=${MINIO_BUCKET_DOCUMENTS:-buildsaathi-documents}
+      - MINIO_USE_SSL=false
+    ports:
+      - "${API_PORT:-5000}:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/source
+
+  # ── Next.js Frontend ──────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infra/docker/frontend/Dockerfile
+    container_name: buildsaathi-frontend
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5000/api/v1}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+  # ── Python AI Services ────────────────────────────────────────────────────
+  ai-services:
+    build:
+      context: ./ai-services
+      dockerfile: ../infra/docker/ai/Dockerfile
+    container_name: buildsaathi-ai
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-mock}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-4096}
+      - AI_PROVIDER=${AI_PROVIDER:-openai}
+      - AI_MOCK_MODE=${AI_MOCK_MODE:-true}
+      - AI_TIMEOUT_SECONDS=${AI_TIMEOUT_SECONDS:-30}
+      - AI_RETRY_COUNT=${AI_RETRY_COUNT:-2}
+      - AI_RETRY_DELAY_MS=${AI_RETRY_DELAY_MS:-500}
+      - RAG_CHUNK_SIZE=${RAG_CHUNK_SIZE:-900}
+      - RAG_CHUNK_OVERLAP=${RAG_CHUNK_OVERLAP:-150}
+      - RAG_TOP_K=${RAG_TOP_K:-4}
+      - RAG_COLLECTION_TENDER=${RAG_COLLECTION_TENDER:-tender_chunks}
+      - RAG_COLLECTION_BOQ=${RAG_COLLECTION_BOQ:-boq_chunks}
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "${AI_SERVICE_PORT:-8000}:8000"
+    depends_on:
+      - chromadb
+      - redis
+    volumes:
+      - ./ai-services:/app
+
+# ─── Named Volumes ────────────────────────────────────────────────────────────
+volumes:
+  mysql-data:
+  redis-data:
+  minio-data:
+  chroma-data:

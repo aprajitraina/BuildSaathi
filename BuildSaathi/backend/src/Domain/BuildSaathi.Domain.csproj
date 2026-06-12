@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BuildSaathi.Domain</RootNamespace>
+    <!-- Domain layer: zero framework dependencies — pure C# only -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Modules\Estimation\Domain\**\*.cs" LinkBase="Modules\Estimation\Domain" />
+  </ItemGroup>
+
+</Project>
